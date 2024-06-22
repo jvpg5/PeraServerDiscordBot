@@ -4,7 +4,10 @@ const {
   StringSelectMenuOptionBuilder,
   SlashCommandBuilder,
 } = require("discord.js");
-const scrapeList = require("../../lib/scrapeList.js");
+const scrapeList = require("../../lib/limeScrape/scrapeList.js");
+const scrapeMagnet = require("../../lib/limeScrape/scrapeMagnet.js");
+const login = require("../../lib/qBitTorrent/login.js");
+const addTorrent = require("../../lib/qBitTorrent/addTorrent.js");
 
 const emojiNumbers = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣"];
 
@@ -85,6 +88,7 @@ module.exports = {
     
 
     let movieIsChosen = false;
+    let movieNum;
     
     do {
       if(more > 7){
@@ -116,12 +120,26 @@ module.exports = {
           movieIsChosen = true;
         } else {
           await optionChosen.reply({
-            content: "Será feito o download do filme escolhido",
+            content: `Será feito o download do filme escolhido, ${lista[more * 5 + parseInt(optionChosen.values[0]) - 1].title}`,
             components: [],
           });
+          movieNum = parseInt(optionChosen.values[0]);
           movieIsChosen = true;
         }
       }
     } while (!movieIsChosen);
+    const magnet = await scrapeMagnet(lista[more * 5 + movieNum - 1].href);
+    const cookies = await login();
+    const responseTorrent = await addTorrent(cookies, magnet);
+
+    if(responseTorrent.status === 200){
+      await interaction.followUp({
+        content: "Download começou com sucesso!",
+      });
+    }else{
+      await interaction.followUp({
+        content: "Erro ao fazer download!",
+      });
+    }
   },
 };
