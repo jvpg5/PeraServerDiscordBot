@@ -13,11 +13,13 @@ const emojiNumbers = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣"];
 
 function movieListMaker(list, more) {
   //more é um numero que indica quantas vezes o usuario clicou em ver mais
-  let str = "Lista de opções para baixar(apenas 5):\n\n";
+  let str = `Lista de opções para baixar(${more + 1} de 7):\n\n`;
   const startMovie = more * 5;
   for (let i = startMovie; i < list.length; i++) {
     if (i >= 5 + startMovie) break;
-    str += `${emojiNumbers[i-startMovie]}º opção:\n${list[i].title}\nTamanho:${list[i].size} | Seed:${list[i].seed}\n\n`;
+    str += `${emojiNumbers[i - startMovie]}º opção:\n${
+      list[i].title
+    }\nTamanho:${list[i].size} | Seed:${list[i].seed}\n\n`;
   }
   return str;
 }
@@ -79,19 +81,19 @@ module.exports = {
     const row = new ActionRowBuilder().addComponents(select);
     let more = 0;
     let movieListStr = movieListMaker(lista, more);
-    
-    
+
     let response = await interaction.reply({
       content: movieListStr,
       components: [row],
     });
-    
 
     let movieIsChosen = false;
+    let cancel = false
     let movieNum;
-    
+
+    let optionChosen;
     do {
-      if(more > 7){
+      if (more > 7) {
         await response.edit({
           content: "Você já viu todas as opções",
           components: [],
@@ -99,15 +101,14 @@ module.exports = {
         break;
       }
       movieListStr = movieListMaker(lista, more);
-      if(more > 0) {
-        await response.edit({
+      if (more > 0) {
+        await optionChosen.update({
           content: movieListStr,
           components: [row],
         });
       }
 
-      const optionChosen = await response.awaitMessageComponent();
-
+      optionChosen = await response.awaitMessageComponent();
 
       if (optionChosen.customId === "chooseMovie") {
         if (optionChosen.values[0] === "more") {
@@ -117,29 +118,35 @@ module.exports = {
             content: "Operação cancelada",
             components: [],
           });
-          movieIsChosen = true;
+          cancel = true;
         } else {
           await optionChosen.reply({
-            content: `Será feito o download do filme escolhido, ${lista[more * 5 + parseInt(optionChosen.values[0]) - 1].title}`,
+            content: `Será feito o download do filme escolhido, ${
+              lista[more * 5 + parseInt(optionChosen.values[0]) - 1].title
+            }`,
             components: [],
           });
           movieNum = parseInt(optionChosen.values[0]);
           movieIsChosen = true;
         }
       }
-    } while (!movieIsChosen);
-    const magnet = await scrapeMagnet(lista[more * 5 + movieNum - 1].href);
-    const cookies = await login();
-    const responseTorrent = await addTorrent(cookies, magnet);
+    } while (!movieIsChosen && !cancel);
+    if (movieIsChosen) {
+      const magnet = await scrapeMagnet(lista[more * 5 + movieNum - 1].href);
+      const cookies = await login();
+      const responseTorrent = await addTorrent(cookies, magnet);
 
-    if(responseTorrent.status === 200){
-      await interaction.followUp({
-        content: "Download começou com sucesso!",
-      });
-    }else{
-      await interaction.followUp({
-        content: "Erro ao fazer download!",
-      });
+      if (responseTorrent.status === 200) {
+        await interaction.followUp({
+          content: "Download começou com sucesso!",
+        });
+      } else {
+        await interaction.followUp({
+          content: "Erro ao fazer download!",
+        });
+      }
     }
   },
 };
+
+//Deus me perdoe por essa bagunça de codigo e projeto que fiz, meu orgulho está divido entre o projeto funcionar e a vergonha de como ele está feito
