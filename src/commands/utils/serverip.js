@@ -1,8 +1,6 @@
 const { hyperlink, SlashCommandBuilder } = require("discord.js");
 const RetornaIp = require("../../lib/getip.js");
 
-
-
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("serverip")
